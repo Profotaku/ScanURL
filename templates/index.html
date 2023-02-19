@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Formulaire de scan</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css">
+</head>
+<body>
+  <section class="section">
+    <div class="container">
+      <div class="notification" id="form-notification"></div>
+      <h1 class="title">Formulaire de scan</h1>
+      <form id="scan-form" action="/scan" method="post">
+        {% csrf_token %}
+        <div class="field">
+          <label class="label">URL à scanner:</label>
+          <div class="control">
+            <input class="input" type="url" name="url" id="url-input" placeholder="https://example.com">
+          </div>
+        </div>
+        <div class="field">
+          <div class="control">
+            <button class="button is-link" type="submit">Lancer le scan</button>
+          </div>
+        </div>
+      </form>
+      <div id="result" class="mt-5"></div>
+    </div>
+  </section>
+  <script>
+    const form = document.querySelector('#scan-form');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const urlInput = document.querySelector('#url-input');
+      const url = urlInput.value;
+      var csrf_token = document.querySelector('[name=csrfmiddlewaretoken]').value
+      const response = await fetch('/scan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+            'X-CSRFToken': csrf_token,
+        },
+        body: JSON.stringify({ "url": url })
+      });
+      const data = await response.json();
+      const resultDiv = document.querySelector('#result');
+      resultDiv.innerHTML = `Le résultat pour l'URL <strong>${url}</strong> est <strong>${data.result}</strong> avec une précision de <strong>${data.result_proba.toFixed(2)}%</strong>.`;
+      const formNotification = document.querySelector('#form-notification');
+      formNotification.classList.remove('is-danger', 'is-success');
+      if (data.result === 'Benign') {
+        resultDiv.classList.add('has-text-success');
+        formNotification.classList.add('is-success');
+        formNotification.innerHTML = 'Votre URL semble être sûre.';
+      } else {
+        resultDiv.classList.add('has-text-danger');
+        formNotification.classList.add('is-danger');
+        formNotification.innerHTML = 'Votre URL semble être malveillante, agissez en conséquence';
+      }
+    });
+  </script>
+</body>
+</html>
